@@ -55,7 +55,7 @@ public sealed class MainWindow
             ImGui.SetNextWindowSize(io.DisplaySize, ImGuiCond.Always);
             ImGui.SetNextWindowPos(new Vector2(0, 0), ImGuiCond.Always);
             ImGui.Begin("scrcpy camera gui",
-                ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoBringToFrontOnFocus);
+                ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoResize);
         }
         else
         {
@@ -65,6 +65,8 @@ public sealed class MainWindow
         if (Debugger.IsAttached)
         {
             ImGui.Checkbox("Show Demo Window", ref _showDemoWindow);
+            ImGui.SameLine();
+            ImGui.Text($"{io.DisplaySize.X}x{io.DisplaySize.Y}");
         }
         
         ImGui.Separator();
