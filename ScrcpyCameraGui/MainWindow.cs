@@ -25,6 +25,10 @@ public sealed class MainWindow
 
     private bool _showDemoWindow;
 
+    private int _desiredV4l2DeviceCount = 4;
+    private bool _persistV4l2Config = true;
+    private bool _v4l2ApplyInProgress;
+
     public MainWindow()
     {
         _rowCallbacks = new DeviceRowCallbacks
@@ -37,6 +41,13 @@ public sealed class MainWindow
         _adb.DeviceConnected += OnDeviceConnected;
         _adb.DeviceDisconnected += OnDeviceDisconnected;
         _adb.Error += OnAdbError;
+
+        if (V4l2ModuleManager.LoadedDeviceCount == 0)
+        {
+            AlertDialogManager.Show("v4l2loopback not detected",
+                "No v4l2loopback devices were found. Scroll down to \"V4l2 loopback module\" to set it up.",
+                AlertLevel.Warning);
+        }
     }
 
     public void Render()
@@ -60,7 +71,7 @@ public sealed class MainWindow
         }
         else
         {
-            ImGui.Begin("scrcpy camera gui");
+            ImGui.Begin("scrcpy gui");
         }
 
         if (Debugger.IsAttached)
@@ -83,6 +94,7 @@ public sealed class MainWindow
         }
 
         RenderKnownWirelessDevices();
+        RenderV4l2ModulePanel();
 
         ImGui.Separator();
         if (ImGui.Button("Refresh devices"))
@@ -114,10 +126,11 @@ public sealed class MainWindow
             ImGui.PushID(known.Serial);
             ImGui.Text($"{known.Label}  ({known.Serial})");
             ImGui.SameLine();
-            
-            if (ImGui.Button("Connect")) _adb.ConnectWireless(known.Serial);
+            if (ImGui.Button("Connect"))
+                _adb.ConnectWireless(known.Serial);
             ImGui.SameLine();
-            if (ImGui.Button("Forget")) _knownStore.Forget(known.Serial);
+            if (ImGui.Button("Forget"))
+                _knownStore.Forget(known.Serial);
             ImGui.PopID();
         }
     }
@@ -201,6 +214,66 @@ public sealed class MainWindow
                     AlertDialogManager.Show("Couldn't enable wireless",
                         error ?? "Check the console output for details.",
                         AlertLevel.Error);
+                }
+            });
+        });
+    }
+
+    private void RenderV4l2ModulePanel()
+    {
+        ImGui.Spacing();
+        ImGui.TextDisabled("V4l2 loopback module");
+        ImGui.Separator();
+
+        var loadedCount = V4l2ModuleManager.LoadedDeviceCount;
+        ImGui.Text(loadedCount > 0
+            ? $"Currently loaded: {loadedCount} device(s)."
+            : "Not currently loaded.");
+
+        ImGui.SetNextItemWidth(80);
+        ImGui.InputInt("Device count", ref _desiredV4l2DeviceCount);
+        if (_desiredV4l2DeviceCount < 1) _desiredV4l2DeviceCount = 1;
+        if (_desiredV4l2DeviceCount > 16) _desiredV4l2DeviceCount = 16;
+
+        ImGui.Checkbox("Persist across reboots", ref _persistV4l2Config);
+
+        if (_v4l2ApplyInProgress)
+        {
+            ImGui.TextDisabled("Applying (you should get a prompt)");
+        }
+        else if (ImGui.Button("Apply"))
+        {
+            ApplyV4l2ModuleSettings();
+        }
+    }
+
+    private void ApplyV4l2ModuleSettings()
+    {
+        if (_v4l2ApplyInProgress) return;
+        _v4l2ApplyInProgress = true;
+
+        var count = _desiredV4l2DeviceCount;
+        var persist = _persistV4l2Config;
+
+        Task.Run(() =>
+        {
+            var result = V4l2ModuleManager.Apply(count, persist);
+
+            _pendingActions.Enqueue(() =>
+            {
+                _v4l2ApplyInProgress = false;
+
+                if (result.Success)
+                {
+                    AlertDialogManager.Show("v4l2loopback updated",
+                        $"Loaded with {count} device(s)" +
+                        (persist ? ", and set to load automatically on boot." : "."),
+                        AlertLevel.Info);
+                }
+                else
+                {
+                    AlertDialogManager.Show("Couldn't update v4l2loopback",
+                        result.Error ?? "Unknown error.", AlertLevel.Error);
                 }
             });
         });
