@@ -24,7 +24,7 @@ jobs:
       - name: Download dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget
+          sudo apt-get install -y wget libfuse2
 
       - name: Build AppImage
         run: |
