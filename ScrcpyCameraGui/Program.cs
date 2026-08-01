@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ScrcpyCameraGui.ScreenCopy;
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
@@ -23,7 +24,18 @@ class Program
             options.Size = new Vector2D<int>(450, 300);
             options.Title = "scrcpy camera gui";
             options.VSync = true;
-
+            
+            Console.WriteLine("making sure scrcpy is availible");
+            try
+            {
+                Scrcpy.EnsureScrcpyAvailableAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                AlertDialogManager.Show("scrcpy download failed",
+                    "Failed to download scrcpy with the error: " + ex.Message, AlertLevel.Error);
+            }
             _window = Window.Create(options);
 
             AppDomain.CurrentDomain.ProcessExit += (_, _) =>

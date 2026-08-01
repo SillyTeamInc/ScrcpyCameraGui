@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -306,8 +307,30 @@ public sealed class AdbService
 
     private static string ResolveAdbPath()
     {
-        //return Environment.GetEnvironmentVariable("ADB_PATH") ?? "adb";
-        return "/home/emi/scrcpy/adb";
+        var adbPath = Environment.GetEnvironmentVariable("ADB_PATH");
+        if (!string.IsNullOrWhiteSpace(adbPath))
+            return adbPath;
+
+        string[] fileNames = ["adb"];
+
+        var pathEnv = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(pathEnv))
+            return "adb";
+
+        foreach (var directory in pathEnv.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            foreach (var fileName in fileNames)
+            {
+                var maybe = Path.Combine(directory, fileName);
+                if (File.Exists(maybe))
+                {
+                    Console.WriteLine("Found ADB at " + maybe);
+                    return maybe;
+                }
+            }
+        }
+
+        return "adb";
     }
 
     public void KillServer()
