@@ -1,0 +1,54 @@
+name: Continuous Release
+
+on:
+  push:
+    branches:
+      - release
+  pull_request:
+    branches:
+      - release
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+
+      - name: Build AppImage
+        run: |
+          cd ScrcpyCameraGui/publishing
+          chmod +x build_appimage.sh
+          ./build_appimage.sh
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScrcpyCameraGui-AppImage
+          path: ScrcpyCameraGui/publishing/ScrcpyCameraGui-x86_64.AppImage
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ScrcpyCameraGui/publishing/ScrcpyCameraGui-x86_64.AppImage
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          body: |
+            Automated continuous release build
+            - Build #${{ github.run_number }}
+            - Commit: ${{ github.sha }}
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
