@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using ImGuiNET;
+using ScrcpyCameraGui.Device;
 using ScrcpyCameraGui.Render;
 using SharpAdbClient;
 

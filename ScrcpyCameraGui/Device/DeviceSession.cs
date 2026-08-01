@@ -1,8 +1,9 @@
 using System.Diagnostics;
+using ScrcpyCameraGui.Render;
 using ScrcpyCameraGui.ScreenCopy;
 using SharpAdbClient;
 
-namespace ScrcpyCameraGui;
+namespace ScrcpyCameraGui.Device;
 
 public enum SessionState
 {

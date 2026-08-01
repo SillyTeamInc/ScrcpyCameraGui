@@ -1,5 +1,6 @@
 using System.Numerics;
 using ImGuiNET;
+using ScrcpyCameraGui.Device;
 using SharpAdbClient;
 
 namespace ScrcpyCameraGui.Render;

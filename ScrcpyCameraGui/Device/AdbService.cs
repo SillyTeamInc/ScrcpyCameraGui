@@ -1,13 +1,10 @@
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
-using System.Threading;
 using SharpAdbClient;
 
-namespace ScrcpyCameraGui;
+namespace ScrcpyCameraGui.Device;
 
 public sealed class AdbService
 {

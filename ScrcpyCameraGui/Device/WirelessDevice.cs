@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace ScrcpyCameraGui;
+namespace ScrcpyCameraGui.Device;
 
 public static class WirelessDevice
 {

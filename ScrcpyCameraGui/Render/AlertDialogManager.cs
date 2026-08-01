@@ -1,7 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 
-namespace ScrcpyCameraGui;
+namespace ScrcpyCameraGui.Render;
 
 public enum AlertLevel
 {

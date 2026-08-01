@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ScrcpyCameraGui.Render;
 using ScrcpyCameraGui.ScreenCopy;
 using Silk.NET.Input;
 using Silk.NET.Maths;

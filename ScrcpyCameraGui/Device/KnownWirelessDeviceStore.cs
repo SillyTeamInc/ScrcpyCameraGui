@@ -1,7 +1,6 @@
-using System.Linq;
 using System.Text.Json;
 
-namespace ScrcpyCameraGui;
+namespace ScrcpyCameraGui.Device;
 
 public sealed record KnownWirelessDevice(string Serial, string Label);
 

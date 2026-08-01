@@ -1,3 +1,5 @@
+using ScrcpyCameraGui.Device;
+
 namespace ScrcpyCameraGui;
 
 public sealed class DeviceRowCallbacks

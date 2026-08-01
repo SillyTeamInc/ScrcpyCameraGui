@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Formats.Tar;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
+using ScrcpyCameraGui.Render;
 
 namespace ScrcpyCameraGui.ScreenCopy;
 
