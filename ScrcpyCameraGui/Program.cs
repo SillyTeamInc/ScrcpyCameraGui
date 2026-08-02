@@ -22,7 +22,7 @@ class Program
         try
         {
             var options = WindowOptions.Default;
-            options.Size = new Vector2D<int>(450, 400);
+            options.Size = new Vector2D<int>(600, 530);
             options.Title = "scrcpy camera gui";
             options.VSync = true;
             

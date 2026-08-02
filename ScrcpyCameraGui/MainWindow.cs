@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ImGuiNET;
 using ScrcpyCameraGui.Device;
 using ScrcpyCameraGui.Render;
+using ScrcpyCameraGui.ScreenCopy;
 using SharpAdbClient;
 
 namespace ScrcpyCameraGui;
@@ -15,6 +16,7 @@ public sealed class MainWindow
     private readonly AdbService _adb = new();
     private readonly V4l2SinkPool _sinkPool = new();
     private readonly KnownWirelessDeviceStore _knownStore = new();
+    private readonly ScrcpyConfigStore _configStore = new();
     private readonly Dictionary<string, DeviceSession> _sessions = new();
     private readonly Dictionary<string, DeviceRowWidget> _widgets = new();
 
@@ -146,9 +148,9 @@ public sealed class MainWindow
             return;
         }
 
-        var session = new DeviceSession(dev, _sinkPool);
+        var session = new DeviceSession(dev, _sinkPool, _configStore);
         _sessions[dev.Serial] = session;
-        _widgets[dev.Serial] = new DeviceRowWidget(session, _rowCallbacks);
+        _widgets[dev.Serial] = new DeviceRowWidget(session, _rowCallbacks, _configStore);
     }
 
     private void OnDeviceDisconnected(DeviceData dev)
