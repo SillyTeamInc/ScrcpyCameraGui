@@ -2,11 +2,15 @@ namespace ScrcpyCameraGui;
 
 public sealed class V4l2SinkPool
 {
+    private const string ObsVirtualCameraName = "OBS Virtual Camera";
+
     private readonly HashSet<int> _inUse = new();
 
     public string Acquire()
     {
-        var available = V4l2LoopbackInfo.DiscoverDeviceIndexes();
+        var available = V4l2LoopbackInfo.DiscoverDeviceIndexes()
+            .Where(index => !IsObsVirtualCamera(index))
+            .ToList();
 
         if (!TryFindFree(available, out var free))
         {
@@ -41,5 +45,25 @@ public sealed class V4l2SinkPool
 
         free = -1;
         return false;
+    }
+
+    private static bool IsObsVirtualCamera(int index)
+    {
+        var namePath = $"/sys/class/video4linux/video{index}/name";
+
+        try
+        {
+            if (!File.Exists(namePath))
+            {
+                return false;
+            }
+            // stupid ass workaround
+            var deviceName = File.ReadAllText(namePath).Trim();
+            return deviceName.Contains(ObsVirtualCameraName, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
