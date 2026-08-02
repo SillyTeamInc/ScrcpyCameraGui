@@ -26,6 +26,9 @@ public sealed class MainWindow
     private readonly DeviceRowCallbacks _rowCallbacks;
 
     private bool _showDemoWindow;
+    
+    private List<string>? _missingDependencies;
+    private bool _dependenciesChecked;
 
     private int _desiredV4l2DeviceCount = 4;
     private bool _persistV4l2Config = true;
@@ -50,12 +53,34 @@ public sealed class MainWindow
                 "No v4l2loopback devices were found. Scroll down to \"V4l2 loopback module\" to set it up.",
                 AlertLevel.Warning);
         }
+
+        if (!V4l2LoopbackCtl.IsAvailable())
+        {
+            AlertDialogManager.Show("v4l2loopback-ctl not found",
+                "Install it for reliable resolution switching: sudo dnf install v4l2loopback-utils\n\n" +
+                "Without it, changing a device's resolution can produce a corrupted image until the module is reloaded.",
+                AlertLevel.Warning);
+        }
     }
 
     public void Render()
     {
         while (_pendingActions.TryDequeue(out var action))
             action();
+
+        // Check for missing dependencies on first frame
+        if (!_dependenciesChecked)
+        {
+            _dependenciesChecked = true;
+            _missingDependencies = DepUtil.CheckMissingDependencies();
+        }
+
+        // Show missing dependencies popup and exit
+        if (_missingDependencies != null && _missingDependencies.Count > 0)
+        {
+            RenderMissingDependenciesPopup();
+            return;
+        }
 
         _adb.Tick();
 
@@ -108,6 +133,35 @@ public sealed class MainWindow
 
         if (_showDemoWindow)
             ImGui.ShowDemoWindow(ref _showDemoWindow);
+    }
+
+    private void RenderMissingDependenciesPopup()
+    {
+        ImGui.SetNextWindowSize(new Vector2(500, 300), ImGuiCond.Appearing);
+        ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
+
+        if (ImGui.Begin("Missing Dependencies", ImGuiWindowFlags.Modal | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize))
+        {
+            ImGui.TextWrapped("The following dependencies are missing. Please install them and restart the application:");
+            ImGui.Spacing();
+
+            if (ImGui.BeginChild("Dependencies", new Vector2(0, -40), ImGuiChildFlags.Border))
+            {
+                foreach (var dep in _missingDependencies!)
+                {
+                    ImGui.BulletText(dep);
+                }
+                ImGui.EndChild();
+            }
+
+            ImGui.Spacing();
+            if (ImGui.Button("Exit", new Vector2(120, 0)))
+            {
+                Environment.Exit(1);
+            }
+
+            ImGui.End();
+        }
     }
 
     private void RenderKnownWirelessDevices()

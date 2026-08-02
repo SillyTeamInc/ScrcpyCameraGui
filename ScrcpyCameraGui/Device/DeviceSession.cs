@@ -45,7 +45,10 @@ public sealed class DeviceSession : IDisposable
 
     public void UpdateDevice(DeviceData device)
     {
-        lock (_lock) { Device = device; }
+        lock (_lock)
+        {
+            Device = device;
+        }
     }
 
     public void Start(bool silent = false)
@@ -70,6 +73,10 @@ public sealed class DeviceSession : IDisposable
                 return;
             }
 
+            var resetResult = V4l2LoopbackCtl.ResetCaps(_sinkPath);
+            if (!resetResult.Success)
+                Console.WriteLine($"Could not reset caps on {_sinkPath}: {resetResult.Error}");
+
             var options = new ScrcpyOptions
             {
                 Serial = Device.Serial,
@@ -77,7 +84,7 @@ public sealed class DeviceSession : IDisposable
                 V4l2Sink = _sinkPath,
                 NoWindow = true
             };
-            
+
             _configStore.Get(Device.Serial).ApplyTo(options);
 
             try
@@ -114,7 +121,7 @@ public sealed class DeviceSession : IDisposable
             State = SessionState.Stopped;
         }
     }
-    
+
     public void TickResume()
     {
         if (State != SessionState.Reconnecting || !_resumeOnReconnect) return;
