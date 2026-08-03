@@ -200,13 +200,38 @@ public sealed class DeviceSession : IDisposable
         {
             if (!_process.HasExited)
             {
-                _process.Kill(entireProcessTree: true);
-                _process.WaitForExit(3000);
+                var terminatedGracefully = false;
+
+                if (OperatingSystem.IsLinux() && TrySendSigterm(_process.Id))
+                    terminatedGracefully = _process.WaitForExit(1500);
+
+                if (!terminatedGracefully)
+                {
+                    _process.Kill(entireProcessTree: true);
+                    _process.WaitForExit(3000);
+                }
             }
         }
         catch
         {
             // nope
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+    private static extern int kill(int pid, int sig);
+
+    private const int Sigterm = 15;
+
+    private static bool TrySendSigterm(int pid)
+    {
+        try
+        {
+            return kill(pid, Sigterm) == 0;
+        }
+        catch
+        {
+            return false;
         }
     }
 
