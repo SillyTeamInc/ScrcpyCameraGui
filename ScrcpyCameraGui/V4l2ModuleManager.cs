@@ -1,32 +1,51 @@
 using System.Diagnostics;
+using System.Linq;
 
 namespace ScrcpyCameraGui;
 
 // ReSharper disable once InconsistentNaming
 public static class V4l2ModuleManager
 {
+    private const int DefaultVideoNrBase = 64;
+
     public static bool IsLoaded => V4l2LoopbackInfo.IsModuleLoaded;
     public static int LoadedDeviceCount => V4l2LoopbackInfo.DiscoverDeviceIndexes().Count;
 
     public readonly record struct Result(bool Success, string? Error);
 
-    public static Result Apply(int deviceCount, bool persist)
+    public static Result Apply(int deviceCount, bool persist, int videoNrBase = DefaultVideoNrBase)
     {
         if (deviceCount < 1) deviceCount = 1;
+
+        var optionsLine = BuildOptionsLine(deviceCount, videoNrBase);
 
         var lines = new List<string>();
 
         if (persist)
         {
             lines.Add("mkdir -p /etc/modprobe.d /etc/modules-load.d");
-            lines.Add($"printf 'options v4l2loopback devices=%d exclusive_caps=1\\n' {deviceCount} > /etc/modprobe.d/v4l2loopback.conf");
+            lines.Add($"printf 'options v4l2loopback {optionsLine}\\n' > /etc/modprobe.d/v4l2loopback.conf");
             lines.Add("printf 'v4l2loopback\\n' > /etc/modules-load.d/v4l2loopback.conf");
         }
 
         lines.Add("modprobe -r v4l2loopback 2>/dev/null || true");
-        lines.Add($"modprobe v4l2loopback devices={deviceCount} exclusive_caps=1");
+        lines.Add($"modprobe v4l2loopback {optionsLine}");
 
         return RunPrivileged(string.Join("\n", lines));
+    }
+
+    // exclusive_caps, video_nr and card_label are all per-device list parameters for some fucking reason
+    private static string BuildOptionsLine(int deviceCount, int videoNrBase)
+    {
+        var videoNrs = Enumerable.Range(videoNrBase, deviceCount);
+        var cardLabels = Enumerable.Range(1, deviceCount).Select(i => $"ScrcpyCamera {i}");
+        var exclusiveCaps = Enumerable.Repeat("1", deviceCount);
+
+        var videoNrArg = string.Join(",", videoNrs);
+        var cardLabelArg = string.Join(",", cardLabels.Select(l => $"\"{l}\""));
+        var exclusiveCapsArg = string.Join(",", exclusiveCaps);
+
+        return $"devices={deviceCount} video_nr={videoNrArg} card_label={cardLabelArg} exclusive_caps={exclusiveCapsArg}";
     }
 
     private static Result RunPrivileged(string script)
