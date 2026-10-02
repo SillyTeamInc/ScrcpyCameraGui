@@ -322,7 +322,7 @@ public sealed class MainWindow
                 if (result.Success)
                 {
                     AlertDialogManager.Show("v4l2loopback updated",
-                        $"Loaded with {count} device(s)" +
+                        $"Loaded {count} device(s) for scrcpy, (1 reserved for OBS virtual camera)" +
                         (persist ? ", and set to load automatically on boot." : "."),
                         AlertLevel.Info);
                 }

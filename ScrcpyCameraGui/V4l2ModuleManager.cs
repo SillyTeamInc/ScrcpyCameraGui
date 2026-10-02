@@ -6,18 +6,21 @@ namespace ScrcpyCameraGui;
 // ReSharper disable once InconsistentNaming
 public static class V4l2ModuleManager
 {
-    private const int DefaultVideoNrBase = 64;
+    private const int DefaultVideoNrBase = 10;
 
     public static bool IsLoaded => V4l2LoopbackInfo.IsModuleLoaded;
     public static int LoadedDeviceCount => V4l2LoopbackInfo.DiscoverDeviceIndexes().Count;
 
     public readonly record struct Result(bool Success, string? Error);
+    
+    public static int ObsVideoNr(int videoNrBase = DefaultVideoNrBase) => videoNrBase;
+    public static int ScrcpyVideoNrBase(int videoNrBase = DefaultVideoNrBase) => videoNrBase + 1;
 
-    public static Result Apply(int deviceCount, bool persist, int videoNrBase = DefaultVideoNrBase)
+    public static Result Apply(int scrcpyDeviceCount, bool persist, int videoNrBase = DefaultVideoNrBase)
     {
-        if (deviceCount < 1) deviceCount = 1;
+        if (scrcpyDeviceCount < 1) scrcpyDeviceCount = 1;
 
-        var optionsLine = BuildOptionsLine(deviceCount, videoNrBase);
+        var optionsLine = BuildOptionsLine(scrcpyDeviceCount + 1, videoNrBase);
 
         var lines = new List<string>();
 
@@ -35,17 +38,20 @@ public static class V4l2ModuleManager
     }
 
     // exclusive_caps, video_nr and card_label are all per-device list parameters for some fucking reason
-    private static string BuildOptionsLine(int deviceCount, int videoNrBase)
+    private static string BuildOptionsLine(int totalDeviceCount, int videoNrBase)
     {
-        var videoNrs = Enumerable.Range(videoNrBase, deviceCount);
-        var cardLabels = Enumerable.Range(1, deviceCount).Select(i => $"ScrcpyCamera {i}");
-        var exclusiveCaps = Enumerable.Repeat("1", deviceCount);
+        var videoNrs = Enumerable.Range(videoNrBase, totalDeviceCount);
+
+        var cardLabels = new List<string> { "OBS Virtual Camera" };
+        cardLabels.AddRange(Enumerable.Range(1, totalDeviceCount - 1).Select(i => $"ScrcpyCamera {i}"));
+
+        var exclusiveCaps = Enumerable.Repeat("1", totalDeviceCount);
 
         var videoNrArg = string.Join(",", videoNrs);
         var cardLabelArg = string.Join(",", cardLabels.Select(l => $"\"{l}\""));
         var exclusiveCapsArg = string.Join(",", exclusiveCaps);
 
-        return $"devices={deviceCount} video_nr={videoNrArg} card_label={cardLabelArg} exclusive_caps={exclusiveCapsArg}";
+        return $"devices={totalDeviceCount} video_nr={videoNrArg} card_label={cardLabelArg} exclusive_caps={exclusiveCapsArg}";
     }
 
     private static Result RunPrivileged(string script)
